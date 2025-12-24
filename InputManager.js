@@ -45,7 +45,10 @@ export class InputManager {
       backward: !!(this.keys['KeyS'] || this.keys['ArrowDown']),
       left: !!(this.keys['KeyA'] || this.keys['ArrowLeft']),
       right: !!(this.keys['KeyD'] || this.keys['ArrowRight']),
-      brake: !!(this.keys['Space'] || this.keys['ShiftLeft'] || this.keys['ShiftRight'])
+      brake: !!(this.keys['Space'] || this.keys['ShiftLeft'] || this.keys['ShiftRight']),
+      ascend: !!this.keys['Space'],
+      descend: !!(this.keys['ShiftLeft'] || this.keys['ShiftRight']),
+      hydraulics: !!this.keys['KeyL']
     };
     
     // Debug log when any input is active

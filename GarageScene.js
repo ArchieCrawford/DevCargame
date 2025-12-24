@@ -35,6 +35,22 @@ export class GarageScene {
         stats: { topSpeed: 140, accel: 10, handling: 10 },
         modelUrl: 'https://rosebud.ai/assets/remotecar.glb?IBr3',
         scale: 1.2
+      },
+      {
+        id: 'lowrider',
+        name: 'Lowrider',
+        description: 'Classic cruiser with hydraulic bounce',
+        stats: { topSpeed: 110, accel: 6, handling: 7 },
+        modelUrl: './assets/LowRider.glb',
+        scale: 0.9
+      },
+      {
+        id: 'helicopter',
+        name: 'Helicopter',
+        description: 'Take to the skies and fly over the city',
+        stats: { topSpeed: 160, accel: 7, handling: 6 },
+        modelUrl: './assets/Helacopter.glb',
+        scale: 0.6
       }
     ];
     

@@ -44,6 +44,37 @@ export const CONFIG = {
       weight: 'light',
       modelUrl: 'https://rosebud.ai/assets/remotecar.glb?IBr3',
       scale: 1.2
+    },
+    lowrider: {
+      name: 'Lowrider',
+      acceleration: 1.0,
+      maxSpeed: 45,
+      turnSpeed: 0.022,
+      friction: 0.95,
+      brakeFriction: 0.82,
+      weight: 'medium',
+      modelUrl: './assets/LowRider.glb',
+      scale: 0.9,
+      hydraulics: true,
+      hydraulicsAmplitude: 0.35,
+      hydraulicsSpeed: 8
+    },
+    helicopter: {
+      name: 'Helicopter',
+      type: 'air',
+      acceleration: 1.4,
+      maxSpeed: 70,
+      turnSpeed: 0.04,
+      friction: 0.98,
+      brakeFriction: 0.9,
+      weight: 'air',
+      modelUrl: './assets/Helacopter.glb',
+      scale: 0.6,
+      liftSpeed: 12,
+      verticalFriction: 0.9,
+      maxAltitude: 200,
+      minAltitude: 1.5,
+      camera: { distance: 20, height: 8 }
     }
   },
   
