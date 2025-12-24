@@ -214,13 +214,33 @@ export class Cybertruck {
     // Simple collision detection
     let canMove = true;
     const truckRadius = 3; // Collision radius
-    
+
     for (const obj of collisionObjects) {
-      const dx = newX - obj.x;
-      const dz = newZ - obj.z;
+      // Support both circle-collision objects ({x,z,radius}) and THREE objects
+      let cx;
+      let cz;
+      let cr;
+
+      if (obj && typeof obj.x === 'number' && typeof obj.z === 'number' && typeof obj.radius === 'number') {
+        cx = obj.x;
+        cz = obj.z;
+        cr = obj.radius;
+      } else if (obj && obj.position && typeof obj.position.x === 'number' && typeof obj.position.z === 'number') {
+        cx = obj.position.x;
+        cz = obj.position.z;
+        cr = (obj.userData && (obj.userData.collisionRadius ?? obj.userData.radius)) ?? 0;
+      } else {
+        continue;
+      }
+
+      // Ignore invalid radii
+      if (!Number.isFinite(cr) || cr <= 0) continue;
+
+      const dx = newX - cx;
+      const dz = newZ - cz;
       const distance = Math.sqrt(dx * dx + dz * dz);
-      
-      if (distance < truckRadius + obj.radius) {
+
+      if (distance < truckRadius + cr) {
         canMove = false;
         this.speed *= 0.5; // Slow down on collision
         break;
