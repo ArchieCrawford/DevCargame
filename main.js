@@ -140,8 +140,14 @@ class CybertruckExperience {
     
     // Create Cybertruck with selected profile
     this.cybertruck = new Cybertruck(this.world, this.selectedVehicleProfile);
-    const starbucksParking = this.spawnPosition;
-    this.cybertruck.group.position.set(starbucksParking.x, starbucksParking.y, starbucksParking.z);
+    const spawn = this.spawnPosition;
+    let spawnY = spawn.y;
+    if (this.cybertruck.profile.type === 'air') {
+      const lift = this.cybertruck.profile.spawnLift ?? 6;
+      const minAltitude = this.cybertruck.profile.minAltitude ?? spawn.y;
+      spawnY = Math.max(spawn.y + lift, minAltitude);
+    }
+    this.cybertruck.group.position.set(spawn.x, spawnY, spawn.z);
     this.cybertruck.group.rotation.y = 0;
     this.cybertruck.rotation = 0;
     this.lastPosition = null;
@@ -156,6 +162,13 @@ class CybertruckExperience {
       this.renderer,
       this.cybertruck
     );
+    
+    if (this.cybertruck.profile.camera) {
+      const { distance, height } = this.cybertruck.profile.camera;
+      if (Number.isFinite(distance) && Number.isFinite(height)) {
+        this.cameraController.cameraOffset.set(0, height, -distance);
+      }
+    }
     
     // Input manager
     this.inputManager = new InputManager();
@@ -303,6 +316,16 @@ class CybertruckExperience {
       if (e.key === 'e' || e.key === 'E') {
         if (this.characterSystem) {
           this.characterSystem.toggleMode();
+
+          const inVehicle = this.characterSystem.isInVehicle;
+          if (this.inputManager) {
+            this.inputManager.setDriveMode(inVehicle);
+          }
+          this.isInDriveMode = inVehicle;
+          if (this.mobileDrivingControls) {
+            if (inVehicle) this.mobileDrivingControls.show();
+            else this.mobileDrivingControls.hide();
+          }
         }
       }
       
@@ -437,6 +460,7 @@ class CybertruckExperience {
     
     // Enable drive mode immediately
     this.inputManager.setDriveMode(true);
+    this.updateControlsHint();
     
     // Navigation buttons (only for Jefferson Ave)
     if (this.navigation) {
@@ -455,6 +479,21 @@ class CybertruckExperience {
         this.clearActiveNavButton();
       });
     }
+  }
+  
+  updateControlsHint() {
+    const controlsHint = document.getElementById('controlsHint');
+    if (!controlsHint || !this.cybertruck) return;
+    
+    const baseHint = 'E Exit Car • C Customize • H Horn • N Mute • R Respawn • 1/2/3 Switch Car • M Toggle Map • G Garage';
+    
+    if (this.cybertruck.profile.type === 'air') {
+      controlsHint.textContent = `WASD/Arrows Fly • Space Up • Shift Down • ${baseHint}`;
+      return;
+    }
+    
+    const hydraulicsHint = this.cybertruck.profile.hydraulics ? ' • L Hydraulics' : '';
+    controlsHint.textContent = `WASD/Arrows Drive • Space/Shift Brake${hydraulicsHint} • ${baseHint}`;
   }
   
   setActiveNavButton(buttonId) {
@@ -609,12 +648,33 @@ class CybertruckExperience {
     if (this.cityBlockSystem) {
       this.cityBlockSystem.update(this.cybertruck.getPosition());
     }
+
+    const inVehicle = !this.characterSystem || this.characterSystem.isInVehicle;
+
+    // Keep drive mode in sync with whether the player is in the vehicle
+    if (this.inputManager && this.inputManager.isDriveMode !== inVehicle) {
+      this.inputManager.setDriveMode(inVehicle);
+    }
+    this.isInDriveMode = inVehicle;
+
+    // Ensure only the correct mobile control system is active
+    if (this.mobileDrivingControls) {
+      if (inVehicle) {
+        this.mobileDrivingControls.show();
+        this.mobileDrivingControls.update();
+      } else {
+        this.mobileDrivingControls.hide();
+      }
+    }
     
     // Get truck input (adapter that converts keys to truck format)
     const truckInput = this.inputManager.getTruckInput();
-    const collisionObjects = this.jeffersonAve
-      ? this.jeffersonAve.getCollisionObjects()
-      : (this.cityBlockSystem?.getCollisionObjects?.() ?? []);
+    const isAirVehicle = this.cybertruck.profile.type === 'air';
+    const collisionObjects = isAirVehicle
+      ? []
+      : (this.jeffersonAve
+        ? this.jeffersonAve.getCollisionObjects()
+        : (this.cityBlockSystem?.getCollisionObjects?.() ?? []));
 
     // Update character system (always; it decides what to do based on mode)
     if (this.characterSystem) {
@@ -622,13 +682,7 @@ class CybertruckExperience {
     }
     
     // Update cybertruck (ONLY when in drive mode AND in vehicle)
-    const inVehicle = !this.characterSystem || this.characterSystem.isInVehicle;
-    if (this.isInDriveMode && inVehicle) {
-      // Update mobile driving controls (injects touch input into inputManager)
-      if (this.mobileDrivingControls) {
-        this.mobileDrivingControls.update();
-      }
-      
+    if (inVehicle) {
       // Store previous speed for collision detection
       const prevSpeed = this.cybertruck.speed;
       
@@ -658,17 +712,19 @@ class CybertruckExperience {
       }
       
       // Check traffic collision
-      const hitVehicle = this.trafficSystem.checkCollision(this.cybertruck.getPosition());
-      if (hitVehicle) {
-        // Play collision sound
-        if (this.soundManager) {
-          const collisionIntensity = Math.abs(prevSpeed) / CONFIG.drive.maxSpeed;
-          this.soundManager.playCollision(collisionIntensity);
+      if (!isAirVehicle) {
+        const hitVehicle = this.trafficSystem.checkCollision(this.cybertruck.getPosition());
+        if (hitVehicle) {
+          // Play collision sound
+          if (this.soundManager) {
+            const collisionIntensity = Math.abs(prevSpeed) / CONFIG.drive.maxSpeed;
+            this.soundManager.playCollision(collisionIntensity);
+          }
+          
+          // Bounce back on collision
+          this.cybertruck.speed *= 0.3;
+          console.log('💥 Traffic collision!');
         }
-        
-        // Bounce back on collision
-        this.cybertruck.speed *= 0.3;
-        console.log('💥 Traffic collision!');
       }
       
       // Check respawn conditions (auto-respawn if flipped/out of bounds)

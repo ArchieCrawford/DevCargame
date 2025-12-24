@@ -15,6 +15,12 @@ export class Cybertruck {
     this.velocity = new THREE.Vector3();
     this.speed = 0;
     this.rotation = Math.PI; // Face forward (toward +Z)
+    this.verticalSpeed = 0;
+    this.baseY = null;
+    this.hydraulicsActive = false;
+    this.hydraulicsPhase = 0;
+    this.hydraulicsOffset = 0;
+    this.hydraulicsToggleHeld = false;
     
     this.model = null;
     this.wheels = [];
@@ -32,6 +38,12 @@ export class Cybertruck {
     const newProfile = CONFIG.vehicles[profileName];
     if (newProfile) {
       this.profile = newProfile;
+      this.speed = 0;
+      this.verticalSpeed = 0;
+      this.hydraulicsActive = false;
+      this.hydraulicsPhase = 0;
+      this.hydraulicsOffset = 0;
+      this.baseY = this.group.position.y;
       console.log(`🚗 Switched to vehicle profile: ${this.profile.name}`);
     }
   }
@@ -93,8 +105,10 @@ export class Cybertruck {
         
         this.group.add(this.model);
         
-        // Add headlights
-        this.addHeadlights();
+        // Add headlights for ground vehicles
+        if (this.profile.type !== 'air') {
+          this.addHeadlights();
+        }
         
         this.isLoaded = true;
         console.log(`${this.profile.name} model loaded successfully!`);
@@ -148,7 +162,9 @@ export class Cybertruck {
   createFallbackTruck() {
     // Note: Placeholder is already created in constructor
     // Just enable headlights
-    this.addHeadlights();
+    if (this.profile.type !== 'air') {
+      this.addHeadlights();
+    }
     this.isLoaded = true;
   }
   
@@ -157,9 +173,14 @@ export class Cybertruck {
     if (!input || !input.isDriveMode) {
       return;
     }
+
+    if (this.profile.type === 'air') {
+      this.updateAirVehicle(deltaTime, input);
+      return;
+    }
     
     // Use vehicle profile for physics
-    const { acceleration, maxSpeed, turnSpeed, friction, brakeFriction } = this.profile;
+    const { acceleration, maxSpeed, turnSpeed, friction } = this.profile;
     
     // Debug: Log input when receiving commands
     if (input.forward || input.backward || input.left || input.right) {
@@ -253,6 +274,7 @@ export class Cybertruck {
       this.group.position.z = newZ;
     }
     
+    this.updateHydraulics(deltaTime, input);
     this.group.rotation.y = this.rotation;
     
     // Update headlight targets to point forward
@@ -269,6 +291,96 @@ export class Cybertruck {
     if (Math.abs(this.speed) < 0.05) {
       this.speed = 0;
     }
+  }
+  
+  updateAirVehicle(deltaTime, input) {
+    const { acceleration, maxSpeed, turnSpeed, friction, brakeFriction } = this.profile;
+    const liftSpeed = this.profile.liftSpeed ?? 10;
+    const verticalFriction = this.profile.verticalFriction ?? 0.9;
+    const maxAltitude = this.profile.maxAltitude ?? 200;
+    const minAltitude = this.profile.minAltitude ?? 1;
+    const yawSpeed = this.profile.yawSpeed ?? turnSpeed;
+    
+    // Yaw
+    if (input.left) {
+      this.rotation += yawSpeed * deltaTime;
+    }
+    if (input.right) {
+      this.rotation -= yawSpeed * deltaTime;
+    }
+    
+    // Forward/back
+    if (input.forward) {
+      this.speed += acceleration * deltaTime;
+    } else if (input.backward) {
+      this.speed -= acceleration * deltaTime;
+    } else {
+      this.speed *= friction;
+    }
+    
+    this.speed = Math.max(-maxSpeed, Math.min(maxSpeed, this.speed));
+    
+    // Ascend/descend
+    if (input.ascend) {
+      this.verticalSpeed += liftSpeed * deltaTime;
+    } else if (input.descend) {
+      this.verticalSpeed -= liftSpeed * deltaTime;
+    } else {
+      this.verticalSpeed *= verticalFriction;
+    }
+    
+    const moveX = Math.sin(this.rotation) * this.speed * deltaTime;
+    const moveZ = Math.cos(this.rotation) * this.speed * deltaTime;
+    
+    this.group.position.x += moveX;
+    this.group.position.z += moveZ;
+    this.group.position.y += this.verticalSpeed * deltaTime;
+    
+    if (this.group.position.y > maxAltitude) {
+      this.group.position.y = maxAltitude;
+      this.verticalSpeed = 0;
+    }
+    if (this.group.position.y < minAltitude) {
+      this.group.position.y = minAltitude;
+      this.verticalSpeed = Math.max(this.verticalSpeed, 0);
+    }
+    
+    this.group.rotation.y = this.rotation;
+    
+    if (Math.abs(this.speed) < 0.02) {
+      this.speed = 0;
+    }
+    if (Math.abs(this.verticalSpeed) < 0.02) {
+      this.verticalSpeed = 0;
+    }
+  }
+  
+  updateHydraulics(deltaTime, input) {
+    if (!this.profile.hydraulics) return;
+    
+    const expectedY = (this.baseY ?? this.group.position.y) + this.hydraulicsOffset;
+    if (this.baseY === null || Math.abs(this.group.position.y - expectedY) > 0.01) {
+      this.baseY = this.group.position.y - this.hydraulicsOffset;
+    }
+    
+    if (input.hydraulics && !this.hydraulicsToggleHeld) {
+      this.hydraulicsActive = !this.hydraulicsActive;
+      this.hydraulicsToggleHeld = true;
+    } else if (!input.hydraulics) {
+      this.hydraulicsToggleHeld = false;
+    }
+    
+    if (this.hydraulicsActive) {
+      const speed = this.profile.hydraulicsSpeed ?? 8;
+      const amplitude = this.profile.hydraulicsAmplitude ?? 0.3;
+      this.hydraulicsPhase += deltaTime * speed;
+      this.hydraulicsOffset = Math.sin(this.hydraulicsPhase) * amplitude;
+    } else {
+      this.hydraulicsPhase = 0;
+      this.hydraulicsOffset = 0;
+    }
+    
+    this.group.position.y = this.baseY + this.hydraulicsOffset;
   }
   
   getPosition() {
