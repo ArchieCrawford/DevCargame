@@ -1,0 +1,14 @@
+# Ignore local logs / work notes
+change-log/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+
+# Node/Python caches (if you add tooling later)
+node_modules/
+__pycache__/
+*.pyc

@@ -335,3 +335,8 @@ This is a prototype/demo project. Vehicle models belong to their respective righ
 **Ready to drive?** Select your ride in the garage and hit the streets! 🚗💨
 
 # DevCargame
+
+## Docs
+
+- Run instructions + module overview: [RUNBOOK.md](RUNBOOK.md)
+- Directory tree snapshot: [DIR_TREE.md](DIR_TREE.md)
