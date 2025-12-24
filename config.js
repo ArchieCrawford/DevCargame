@@ -69,7 +69,7 @@ export const CONFIG = {
       brakeFriction: 0.9,
       weight: 'air',
       modelUrl: './assets/Helacopter.glb',
-      scale: 0.6,
+      scale: 1.6,
       spawnLift: 8,
       liftSpeed: 12,
       verticalFriction: 0.9,

@@ -50,7 +50,7 @@ export class GarageScene {
         description: 'Take to the skies and fly over the city',
         stats: { topSpeed: 160, accel: 7, handling: 6 },
         modelUrl: './assets/Helacopter.glb',
-        scale: 0.6
+        scale: 1.6
       }
     ];
     
