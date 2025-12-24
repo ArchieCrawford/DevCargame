@@ -1,0 +1,11 @@
+{
+  "name": "Cyber Showroom Drive",
+  "revisionLabel": "Fix duplicate const isMobile declaration error",
+  "description": "",
+  "mode": "Universal",
+  "exportDate": "2025-12-24T19:32:38.057Z",
+  "assetCount": 4,
+  "assetTypes": [
+    "glb"
+  ]
+}

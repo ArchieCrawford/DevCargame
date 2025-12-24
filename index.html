@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tesla Cybertruck Experience</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.160.0",
+          "three/": "https://esm.sh/three@0.160.0/"
+        }
+      }
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        overflow: hidden;
+        background: #000;
+      }
+      
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100vh;
+      }
+      
+      #ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      
+      .mode-button {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 16px 40px;
+        background: rgba(255, 255, 255, 0.95);
+        color: #000;
+        border: none;
+        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        pointer-events: auto;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        letter-spacing: 0.5px;
+      }
+      
+      .mode-button:hover {
+        background: #fff;
+        transform: translateX(-50%) translateY(-2px);
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+      }
+      
+      .mode-button:active {
+        transform: translateX(-50%) translateY(0);
+      }
+      
+      .title {
+        position: absolute;
+        top: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        font-size: 32px;
+        font-weight: 300;
+        letter-spacing: 8px;
+        text-transform: uppercase;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 1s ease 0.5s forwards;
+      }
+      
+      .subtitle {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 1s ease 0.8s forwards;
+      }
+      
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+      
+      .controls-hint {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px 20px;
+        border-radius: 20px;
+      }
+      
+      .controls-hint.visible {
+        opacity: 1;
+      }
+      
+      .logo {
+        position: absolute;
+        top: 40px;
+        left: 40px;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        opacity: 0;
+        animation: fadeIn 1s ease 0.3s forwards;
+      }
+      
+      .speedometer {
+        position: absolute;
+        bottom: 40px;
+        left: 40px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      .speedometer.visible {
+        opacity: 1;
+      }
+      
+      .speed-display {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      
+      .speed-value {
+        font-size: 72px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        min-width: 120px;
+        text-align: right;
+      }
+      
+      .speed-unit {
+        font-size: 20px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1;
+        margin-bottom: 8px;
+      }
+      
+      .gear-indicator {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      
+      .gear-label {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 500;
+        letter-spacing: 1px;
+      }
+      
+      .gear-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+      
+      .gear-value.park {
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .gear-value.drive {
+        border-color: #00ff88;
+        color: #00ff88;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+      }
+      
+      .gear-value.reverse {
+        border-color: #ff6b6b;
+        color: #ff6b6b;
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+      }
+      
+      .power-bar {
+        position: absolute;
+        bottom: 180px;
+        left: 40px;
+        width: 300px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .power-bar.visible {
+        opacity: 1;
+      }
+      
+      .power-label {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+      }
+      
+      .power-track {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      
+      .power-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff88, #00ccff);
+        border-radius: 2px;
+        transition: width 0.1s ease;
+        width: 0%;
+      }
+      
+      .minimap-container {
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        width: 200px;
+        height: 200px;
+        background: rgba(10, 10, 10, 0.85);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .minimap-container.visible {
+        opacity: 1;
+      }
+      
+      .minimap-label {
+        position: absolute;
+        top: 8px;
+        left: 12px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+        letter-spacing: 1px;
+        z-index: 10;
+      }
+      
+      #minimapCanvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      
+      .navigation-panel {
+        position: absolute;
+        top: 260px;
+        right: 40px;
+        width: 200px;
+        background: rgba(10, 10, 10, 0.85);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 12px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .navigation-panel.visible {
+        opacity: 1;
+      }
+      
+      .nav-title {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+      }
+      
+      .nav-button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        pointer-events: auto;
+      }
+      
+      .nav-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: #00ff88;
+      }
+      
+      .nav-button:active {
+        transform: scale(0.95);
+      }
+      
+      .nav-button.active {
+        background: rgba(0, 255, 136, 0.3);
+        border-color: #00ff88;
+      }
+      
+      .street-name {
+        position: absolute;
+        top: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(10, 10, 10, 0.85);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 8px 20px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .street-name.visible {
+        opacity: 1;
+      }
+      
+      .skip-intro {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 1px;
+        opacity: 1;
+        animation: pulse 2s ease-in-out infinite;
+        pointer-events: none;
+      }
+      
+      .skip-intro.hidden {
+        display: none;
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      
+      /* Mobile optimizations */
+      @media (max-width: 768px) {
+        /* Hide non-essential UI on mobile */
+        .logo {
+          display: none;
+        }
+        
+        .title {
+          display: none;
+        }
+        
+        .subtitle {
+          display: none;
+        }
+        
+        .controls-hint {
+          display: none !important;
+        }
+        
+        .navigation-panel {
+          display: none !important;
+        }
+        
+        .power-bar {
+          display: none !important;
+        }
+        
+        /* Compact speedometer */
+        .speedometer {
+          bottom: 20px;
+          left: 20px;
+          transform: scale(0.7);
+          transform-origin: bottom left;
+        }
+        
+        .speed-value {
+          font-size: 48px;
+          min-width: 80px;
+        }
+        
+        .speed-unit {
+          font-size: 16px;
+        }
+        
+        .gear-value {
+          width: 45px;
+          height: 45px;
+          font-size: 24px;
+        }
+        
+        /* Compact minimap */
+        .minimap-container {
+          top: 20px;
+          right: 20px;
+          width: 120px;
+          height: 120px;
+        }
+        
+        /* Street name - smaller and higher */
+        .street-name {
+          top: 20px;
+          left: 50%;
+          font-size: 11px;
+          padding: 5px 12px;
+        }
+        
+        /* Skip intro */
+        .skip-intro {
+          font-size: 12px;
+          bottom: 20px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        /* Even more compact for small phones */
+        .speedometer {
+          transform: scale(0.6);
+        }
+        
+        .minimap-container {
+          width: 100px;
+          height: 100px;
+        }
+        
+        .street-name {
+          font-size: 10px;
+          padding: 4px 10px;
+        }
+      }
+      
+      /* Hide mobile driving controls on desktop */
+      @media (min-width: 1025px) {
+        #mobileDrivingControls {
+          display: none !important;
+        }
+      }
+      
+      /* Sound toggle button mobile positioning */
+      @media (max-width: 768px) {
+        #soundToggleButton {
+          top: 160px !important;
+          right: 20px !important;
+          width: 40px !important;
+          height: 40px !important;
+          font-size: 18px !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui">
+      <div class="logo">TESLA</div>
+      <div class="title">CYBERTRUCK</div>
+      <div class="subtitle">Jefferson Ave Experience</div>
+      <div class="controls-hint visible" id="controlsHint">
+        WASD/Arrows Drive • E Exit Car • C Customize • H Horn • N Mute • R Respawn • 1/2/3 Switch Car • M Toggle Map • G Garage
+      </div>
+      
+      <!-- Speedometer -->
+      <div class="speedometer" id="speedometer">
+        <div class="speed-display">
+          <div class="speed-value" id="speedValue">0</div>
+          <div class="speed-unit">MPH</div>
+        </div>
+        <div class="gear-indicator">
+          <div class="gear-label">GEAR</div>
+          <div class="gear-value park" id="gearValue">P</div>
+        </div>
+      </div>
+      
+      <!-- Power Bar -->
+      <div class="power-bar" id="powerBar">
+        <div class="power-label">POWER</div>
+        <div class="power-track">
+          <div class="power-fill" id="powerFill"></div>
+        </div>
+      </div>
+      
+      <!-- Minimap -->
+      <div class="minimap-container" id="minimapContainer">
+        <div class="minimap-label">MAP</div>
+        <canvas id="minimapCanvas" width="200" height="200"></canvas>
+      </div>
+      
+      <!-- Navigation Panel -->
+      <div class="navigation-panel" id="navigationPanel">
+        <div class="nav-title">SET DESTINATION</div>
+        <button class="nav-button" id="navWalmart">🛒 Walmart</button>
+        <button class="nav-button" id="navStarbucks">☕ Starbucks</button>
+        <button class="nav-button" id="navClear">✕ Clear Route</button>
+      </div>
+      
+      <!-- Street Name Display -->
+      <div class="street-name" id="streetName">Jefferson Ave</div>
+      
+      <!-- Skip Intro Hint -->
+      <div class="skip-intro" id="skipIntro">Click anywhere to skip intro</div>
+    </div>
+    
+    <script type="module" src="main.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ChatManager.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ImageGenerator.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/ProgressLogger.js"></script>
+    <script src="https://storage.googleapis.com/rosebud_staticfiles/OGP.js"></script>
+  </body>
+</html>
