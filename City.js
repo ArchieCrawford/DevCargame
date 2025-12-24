@@ -4,6 +4,8 @@ export class City {
   constructor(scene) {
     this.scene = scene;
     this.collisionObjects = [];
+    this.collisionRadiusScale = 0.45;
+    this.sidewalkCollisionScale = 0.25;
     this.createCity();
   }
   
@@ -91,21 +93,23 @@ export class City {
     });
     
     // Left sidewalk along main road
-    const sidewalkGeometry = new THREE.BoxGeometry(4, 0.2, 300);
+    const sidewalkWidth = 4;
+    const sidewalkGeometry = new THREE.BoxGeometry(sidewalkWidth, 0.2, 300);
     const leftSidewalk = new THREE.Mesh(sidewalkGeometry, sidewalkMaterial);
     leftSidewalk.position.set(-12, 0.1, 100);
     leftSidewalk.receiveShadow = true;
     this.scene.add(leftSidewalk);
     
     // Add collision
-    this.collisionObjects.push({ x: -12, z: 100, radius: 2 });
+    const sidewalkCollisionRadius = sidewalkWidth * this.sidewalkCollisionScale;
+    this.addCollisionCircle(leftSidewalk.position.x, leftSidewalk.position.z, sidewalkCollisionRadius);
     
     // Right sidewalk
     const rightSidewalk = leftSidewalk.clone();
     rightSidewalk.position.x = 12;
     this.scene.add(rightSidewalk);
     
-    this.collisionObjects.push({ x: 12, z: 100, radius: 2 });
+    this.addCollisionCircle(rightSidewalk.position.x, rightSidewalk.position.z, sidewalkCollisionRadius);
   }
   
   createBuildings() {
@@ -167,11 +171,8 @@ export class City {
       }
       
       // Add collision
-      this.collisionObjects.push({
-        x: config.x,
-        z: config.z,
-        radius: Math.max(config.width, config.depth) / 2 + 2
-      });
+      const buildingRadius = Math.max(config.width, config.depth) * this.collisionRadiusScale;
+      this.addCollisionCircle(config.x, config.z, buildingRadius);
     });
   }
   
@@ -282,5 +283,10 @@ export class City {
   
   getCollisionObjects() {
     return this.collisionObjects;
+  }
+  
+  addCollisionCircle(x, z, radius) {
+    if (!Number.isFinite(radius) || radius <= 0) return;
+    this.collisionObjects.push({ x, z, radius });
   }
 }
