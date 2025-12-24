@@ -329,8 +329,8 @@ export class CharacterSystem {
         this.inputManager.setDriveMode(false);
       }
       
-      // Start with walk animation instead of idle to avoid T-pose
-      this.playAnimation('walk');
+      // Start with idle animation immediately
+      this.playAnimation('idle');
       console.log('🚶 Exited vehicle');
     }
   }
@@ -431,38 +431,41 @@ export class CharacterSystem {
       this.dance();
       return; // Don't move while dancing
     }
-    
-    // Calculate movement
+
     const isMoving = Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1;
-    
+
     if (isMoving) {
-      // Determine speed
       const currentSpeed = this.isRunning ? this.runSpeed : this.walkSpeed;
-      
-      // Calculate direction
-      const angle = Math.atan2(moveX, moveZ);
-      this.rotation = angle;
-      
-      // Move character
+
+      const forward = new THREE.Vector3();
+      this.camera.getWorldDirection(forward);
+      forward.y = 0;
+      if (forward.lengthSq() > 0) forward.normalize();
+
+      const right = new THREE.Vector3(forward.z, 0, -forward.x);
+      if (right.lengthSq() > 0) right.normalize();
+
+      const moveDir = new THREE.Vector3();
+      moveDir.addScaledVector(forward, moveZ);
+      moveDir.addScaledVector(right, moveX);
+      if (moveDir.lengthSq() > 0) moveDir.normalize();
+
       const moveSpeed = currentSpeed * deltaTime;
-      this.position.x += Math.sin(angle) * moveSpeed;
-      this.position.z += Math.cos(angle) * moveSpeed;
-      
-      // Update character transform
+      this.position.addScaledVector(moveDir, moveSpeed);
+
+      this.rotation = Math.atan2(moveDir.x, moveDir.z);
+
       this.character.position.copy(this.position);
       this.character.rotation.y = this.rotation + this.modelYawOffset;
-      
-      // Play appropriate animation
+
       if (this.isRunning) {
         this.playAnimation('run');
       } else {
         this.playAnimation('walk');
       }
-      
-      // Update camera to follow character
+
       this.updateCharacterCamera();
     } else {
-      // Idle
       if (this.currentAnimation !== 'dance') {
         this.playAnimation('idle');
       }

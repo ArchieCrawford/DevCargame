@@ -183,6 +183,20 @@ class MobileControls {
   constructor(controller) {
     this.controller = controller;
     this.isMobile = MobileUtils.isMobile();
+
+    this.injectedKeys = new Set();
+    this.keyboardDown = new Set();
+
+    this.onWindowKeyDown = (e) => {
+      if (!e || !e.code) return;
+      this.keyboardDown.add(e.code);
+    };
+    this.onWindowKeyUp = (e) => {
+      if (!e || !e.code) return;
+      this.keyboardDown.delete(e.code);
+    };
+    window.addEventListener('keydown', this.onWindowKeyDown, false);
+    window.addEventListener('keyup', this.onWindowKeyUp, false);
     
     // Only initialize on mobile devices and for player controllers
     if (!this.isMobile) {
@@ -194,6 +208,36 @@ class MobileControls {
     this.currentInput = { x: 0, y: 0 };
 
     this.setupPlayerControls();
+  }
+
+  get keys() {
+    return this.controller && this.controller.keys ? this.controller.keys : null;
+  }
+
+  isDriveMode() {
+    return !!(this.controller && this.controller.isDriveMode);
+  }
+
+  setInjectedKey(code, isDown) {
+    const keys = this.keys;
+    if (!keys) return;
+
+    if (isDown) {
+      keys[code] = true;
+      this.injectedKeys.add(code);
+      return;
+    }
+
+    if (this.injectedKeys.has(code) && !this.keyboardDown.has(code)) {
+      keys[code] = false;
+    }
+    this.injectedKeys.delete(code);
+  }
+
+  resetInjectedKeys() {
+    for (const code of Array.from(this.injectedKeys)) {
+      this.setInjectedKey(code, false);
+    }
   }
 
   setupPlayerControls() {
@@ -215,13 +259,14 @@ class MobileControls {
   setupJumpButton() {
     const handleJumpStart = (e) => {
       e.preventDefault();
-      this.controller.keys['Space'] = true;
+      if (this.isDriveMode()) return;
+      this.setInjectedKey('Space', true);
       this.mobileUI.jumpButton.style.background = 'rgba(255, 255, 255, 0.4)';
     };
 
     const handleJumpEnd = (e) => {
       e.preventDefault();
-      this.controller.keys['Space'] = false;
+      this.setInjectedKey('Space', false);
       this.mobileUI.jumpButton.style.background = 'rgba(255, 255, 255, 0.2)';
     };
 
@@ -233,29 +278,33 @@ class MobileControls {
 
   handleJoystickInput(input) {
     this.currentInput = input;
-    
-    // Clear all movement keys first
-    this.controller.keys['KeyW'] = false;
-    this.controller.keys['KeyS'] = false;
-    this.controller.keys['KeyA'] = false;
-    this.controller.keys['KeyD'] = false;
 
+    if (this.isDriveMode()) {
+      this.resetInjectedKeys();
+      return;
+    }
+    
     // Set keys based on joystick input (with deadzone)
     const deadzone = 0.1;
+
+    this.setInjectedKey('KeyW', false);
+    this.setInjectedKey('KeyS', false);
+    this.setInjectedKey('KeyA', false);
+    this.setInjectedKey('KeyD', false);
     
     if (Math.abs(input.y) > deadzone) {
       if (input.y > 0) {
-        this.controller.keys['KeyW'] = true; // Forward
+        this.setInjectedKey('KeyW', true);
       } else {
-        this.controller.keys['KeyS'] = true; // Backward
+        this.setInjectedKey('KeyS', true);
       }
     }
     
     if (Math.abs(input.x) > deadzone) {
       if (input.x > 0) {
-        this.controller.keys['KeyD'] = true; // Right
+        this.setInjectedKey('KeyD', true);
       } else {
-        this.controller.keys['KeyA'] = true; // Left
+        this.setInjectedKey('KeyA', true);
       }
     }
   }
@@ -265,6 +314,10 @@ class MobileControls {
     
     // Remove the mobile UI
     MobileUtils.removeMobileUI();
+
+    this.resetInjectedKeys();
+    window.removeEventListener('keydown', this.onWindowKeyDown, false);
+    window.removeEventListener('keyup', this.onWindowKeyUp, false);
   }
 }
 

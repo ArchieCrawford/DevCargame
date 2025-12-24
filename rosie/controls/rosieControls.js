@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MobileControls } from './rosieMobileControls.js';
+import { InputManager } from '../../InputManager.js';
 
 /**
  * PlayerController - Handles player movement and physics
@@ -18,14 +19,18 @@ class PlayerController {
     this.velocity = new THREE.Vector3();
     this.isOnGround = true;
     this.canJump = true;
-    this.keys = {};
+    this.inputManager = options.inputManager || null;
+    this.keys = this.inputManager ? this.inputManager.keys : {};
     this.cameraMode = 'third-person'; // Default camera mode
 
     // Setup input handlers
-    this.setupInput();
+    if (!this.inputManager) {
+      this.inputManager = new InputManager();
+      this.keys = this.inputManager.keys;
+    }
 
     // Initialize mobile controls (handles its own detection and activation)
-    this.mobileControls = new MobileControls(this);
+    this.mobileControls = new MobileControls(this.inputManager);
   }
 
   setupInput() {
