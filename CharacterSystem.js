@@ -5,12 +5,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  * Character System - Player character that can exit vehicle and walk around
  */
 export class CharacterSystem {
-  constructor(scene, vehicle, camera, mobileDrivingControls = null, soundManager = null) {
+  constructor(scene, vehicle, camera, mobileDrivingControls = null, soundManager = null, inputManager = null) {
     this.scene = scene;
     this.vehicle = vehicle;
     this.camera = camera;
     this.mobileDrivingControls = mobileDrivingControls; // Reference to driving controls
     this.soundManager = soundManager; // Reference to sound manager
+    this.inputManager = inputManager;
     this.isInVehicle = true;
     this.character = null;
     this.mixer = null;
@@ -24,6 +25,7 @@ export class CharacterSystem {
     this.walkSpeed = 5;
     this.runSpeed = 12;
     this.isRunning = false;
+    this.modelYawOffset = Math.PI / 2;
     
     // Load character model
     this.loadCharacter();
@@ -70,6 +72,7 @@ export class CharacterSystem {
         // Hide initially (in vehicle)
         this.character.visible = false;
         this.scene.add(this.character);
+        this.character.rotation.y = this.modelYawOffset;
         
         // Start with idle animation
         this.playAnimation('idle');
@@ -160,6 +163,7 @@ export class CharacterSystem {
     runButton.addEventListener('touchstart', (e) => { e.preventDefault(); this.startRun(); });
     runButton.addEventListener('touchend', (e) => { e.preventDefault(); this.stopRun(); });
     actionContainer.appendChild(runButton);
+    this.runButton = runButton;
     
     document.body.appendChild(actionContainer);
     this.actionContainer = actionContainer;
@@ -287,6 +291,10 @@ export class CharacterSystem {
       if (this.soundManager) {
         this.soundManager.startEngine();
       }
+
+      if (this.inputManager) {
+        this.inputManager.setDriveMode(true);
+      }
       
       console.log('🚗 Entered vehicle');
     } else {
@@ -294,11 +302,11 @@ export class CharacterSystem {
       const vehiclePos = this.vehicle.getPosition();
       this.position.copy(vehiclePos);
       this.position.x += 3; // Exit to the side
-      this.rotation = this.vehicle.rotation;
+      this.rotation = this.vehicle.group.rotation.y;
       
       this.character.visible = true;
       this.character.position.copy(this.position);
-      this.character.rotation.y = this.rotation;
+      this.character.rotation.y = this.rotation + this.modelYawOffset;
       
       // Hide vehicle (or keep visible, your choice)
       // this.vehicle.group.visible = false;
@@ -316,6 +324,10 @@ export class CharacterSystem {
       if (this.soundManager) {
         this.soundManager.stopEngine();
       }
+
+      if (this.inputManager) {
+        this.inputManager.setDriveMode(false);
+      }
       
       // Start with walk animation instead of idle to avoid T-pose
       this.playAnimation('walk');
@@ -323,27 +335,29 @@ export class CharacterSystem {
     }
   }
   
+  findClip(keyword) {
+    const names = Object.keys(this.animations);
+    const target = keyword.toLowerCase();
+    return names.find((name) => name.toLowerCase().includes(target)) || null;
+  }
+  
   playAnimation(animName) {
-    if (!this.mixer || !this.animations[animName]) {
-      // Fallback to common animation names
-      const fallbacks = {
-        'idle': ['Idle', 'idle', 'T-Pose', 'TPose'],
-        'walk': ['Walk', 'walk', 'Walking', 'walking'],
-        'run': ['Run', 'run', 'Running', 'running'],
-        'dance': ['Dance', 'dance', 'Dancing', 'dancing']
-      };
-      
-      if (fallbacks[animName]) {
-        for (const fallback of fallbacks[animName]) {
-          if (this.animations[fallback]) {
-            animName = fallback;
-            break;
-          }
-        }
+    if (!this.mixer) return;
+    
+    let resolvedName = animName;
+    if (!this.animations[resolvedName]) {
+      const mapped = this.findClip(animName);
+      if (mapped) {
+        resolvedName = mapped;
       }
     }
     
-    if (this.currentAnimation === animName) return;
+    if (!this.animations[resolvedName]) {
+      console.warn(`Animation "${animName}" not found. Available:`, Object.keys(this.animations));
+      return;
+    }
+    
+    if (this.currentAnimation === resolvedName) return;
     
     // Stop previous animation
     if (this.currentAnimation && this.animations[this.currentAnimation]) {
@@ -351,12 +365,8 @@ export class CharacterSystem {
     }
     
     // Play new animation
-    if (this.animations[animName]) {
-      this.animations[animName].reset().fadeIn(0.2).play();
-      this.currentAnimation = animName;
-    } else {
-      console.warn(`Animation "${animName}" not found. Available:`, Object.keys(this.animations));
-    }
+    this.animations[resolvedName].reset().fadeIn(0.2).play();
+    this.currentAnimation = resolvedName;
   }
   
   dance() {
@@ -440,7 +450,7 @@ export class CharacterSystem {
       
       // Update character transform
       this.character.position.copy(this.position);
-      this.character.rotation.y = this.rotation;
+      this.character.rotation.y = this.rotation + this.modelYawOffset;
       
       // Play appropriate animation
       if (this.isRunning) {

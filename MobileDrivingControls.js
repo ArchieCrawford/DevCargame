@@ -61,6 +61,27 @@ export class MobileDrivingControls {
     }
   }
   
+  clearMovementKeys() {
+    if (!this.inputManager || !this.inputManager.keys) return;
+    
+    const codes = [
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'KeyW',
+      'KeyA',
+      'KeyS',
+      'KeyD'
+    ];
+    
+    codes.forEach((code) => {
+      if (!this.keyboardDown.has(code)) {
+        this.inputManager.keys[code] = false;
+      }
+    });
+  }
+  
   createControls() {
     const isMobile = window.innerWidth <= 768;
     
@@ -527,6 +548,7 @@ export class MobileDrivingControls {
     this.touches.steering.active = false;
     this.touches.steering.currentX = 0;
     this.resetInjectedKeys();
+    this.clearMovementKeys();
     this.updateSteeringIndicator();
   }
   

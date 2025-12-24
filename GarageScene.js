@@ -239,82 +239,88 @@ export class GarageScene {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      padding: 40px 24px;
+      box-sizing: border-box;
       pointer-events: none;
       z-index: 100;
     `;
     
     garageUI.innerHTML = `
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="color: white; font-size: 48px; font-weight: 700; letter-spacing: 4px; margin: 0;">SELECT YOUR RIDE</h1>
-        <p style="color: rgba(255, 255, 255, 0.6); font-size: 16px; margin-top: 10px;">Choose a vehicle to explore Jefferson Ave</p>
-      </div>
-      
-      <div id="carInfo" style="text-align: center; margin-bottom: 40px;">
-        <h2 id="carName" style="color: #00ff88; font-size: 36px; font-weight: 700; margin: 0;">Cybertruck</h2>
-        <p id="carDescription" style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin: 10px 0 20px 0;">Heavy electric pickup with excellent acceleration</p>
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px;">
+        <div>
+          <h1 style="color: white; font-size: 48px; font-weight: 700; letter-spacing: 4px; margin: 0;">SELECT YOUR RIDE</h1>
+          <p style="color: rgba(255, 255, 255, 0.6); font-size: 16px; margin-top: 10px;">Choose a vehicle to explore Jefferson Ave</p>
+        </div>
         
-        <div style="display: flex; gap: 30px; justify-content: center;">
-          <div>
-            <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">TOP SPEED</div>
-            <div id="statTopSpeed" style="color: white; font-size: 24px; font-weight: 700;">125 MPH</div>
-          </div>
-          <div>
-            <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">ACCEL</div>
-            <div id="statAccel" style="color: white; font-size: 24px; font-weight: 700;">8/10</div>
-          </div>
-          <div>
-            <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">HANDLING</div>
-            <div id="statHandling" style="color: white; font-size: 24px; font-weight: 700;">6/10</div>
+        <div id="carInfo" style="text-align: center;">
+          <h2 id="carName" style="color: #00ff88; font-size: 36px; font-weight: 700; margin: 0;">Cybertruck</h2>
+          <p id="carDescription" style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin: 10px 0 20px 0;">Heavy electric pickup with excellent acceleration</p>
+          
+          <div style="display: flex; gap: 30px; justify-content: center;">
+            <div>
+              <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">TOP SPEED</div>
+              <div id="statTopSpeed" style="color: white; font-size: 24px; font-weight: 700;">125 MPH</div>
+            </div>
+            <div>
+              <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">ACCEL</div>
+              <div id="statAccel" style="color: white; font-size: 24px; font-weight: 700;">8/10</div>
+            </div>
+            <div>
+              <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-bottom: 5px;">HANDLING</div>
+              <div id="statHandling" style="color: white; font-size: 24px; font-weight: 700;">6/10</div>
+            </div>
           </div>
         </div>
       </div>
       
-      <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-        <button id="prevCarBtn" style="
-          padding: 12px 24px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-radius: 8px;
-          color: white;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          pointer-events: auto;
-          transition: all 0.2s;
-        ">← PREVIOUS</button>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 18px; margin-bottom: 10px;">
+        <div style="display: flex; gap: 20px;">
+          <button id="prevCarBtn" style="
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+          ">← PREVIOUS</button>
+          
+          <button id="nextCarBtn" style="
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+          ">NEXT →</button>
+        </div>
         
-        <button id="nextCarBtn" style="
-          padding: 12px 24px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-radius: 8px;
-          color: white;
-          font-size: 16px;
-          font-weight: 600;
+        <button id="driveBtn" style="
+          padding: 20px 60px;
+          background: linear-gradient(135deg, #00ff88, #00ccff);
+          border: none;
+          border-radius: 50px;
+          color: #000;
+          font-size: 24px;
+          font-weight: 700;
+          letter-spacing: 2px;
           cursor: pointer;
           pointer-events: auto;
-          transition: all 0.2s;
-        ">NEXT →</button>
-      </div>
-      
-      <button id="driveBtn" style="
-        padding: 20px 60px;
-        background: linear-gradient(135deg, #00ff88, #00ccff);
-        border: none;
-        border-radius: 50px;
-        color: #000;
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        cursor: pointer;
-        pointer-events: auto;
-        transition: all 0.3s;
-        box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
-      ">ENTER DRIVE MODE</button>
-      
-      <div style="color: rgba(255, 255, 255, 0.5); font-size: 13px; margin-top: 20px;">
-        Arrow keys to browse • Enter to select
+          transition: all 0.3s;
+          box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
+        ">ENTER DRIVE MODE</button>
+        
+        <div style="color: rgba(255, 255, 255, 0.5); font-size: 13px;">
+          Arrow keys to browse • Enter to select
+        </div>
       </div>
     `;
     

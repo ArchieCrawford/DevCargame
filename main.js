@@ -278,7 +278,8 @@ class CybertruckExperience {
         this.cybertruck, 
         this.camera, 
         this.mobileDrivingControls,
-        this.soundManager
+        this.soundManager,
+        this.inputManager
       );
       console.log('✅ Character system loaded');
     } catch (error) {
