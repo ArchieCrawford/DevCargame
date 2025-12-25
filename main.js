@@ -134,8 +134,8 @@ class CybertruckExperience {
       this.jeffersonAve = new JeffersonAve(this.world);
       this.cityBlockSystem = null;
       
-      // Spawn at Starbucks parking
-      this.spawnPosition = { x: -50, y: 0.4, z: 830 };
+      // Spawn on Jefferson Ave near Starbucks (avoid landmark collision radius)
+      this.spawnPosition = { x: 0, y: 0.4, z: 830 };
     }
     
     // Create Cybertruck with selected profile
